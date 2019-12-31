@@ -8,10 +8,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"log"
+	"os"
 	"path/filepath"
 )
 
 func main() {
+	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	log.Println("host:", host, " port:", port)
+
 	var kubeConfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeConfig = flag.String("kubeConfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeConfig file")
@@ -19,11 +24,12 @@ func main() {
 		kubeConfig = flag.String("kubeConfig", "", "absolute path to the kubeConfig file")
 	}
 	flag.Parse()
-
+	log.Println("kubeConfig:", *kubeConfig)
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
 	if err != nil {
 		panic(err)
 	}
+	log.Println("config:", config)
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)

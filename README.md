@@ -1,2 +1,40 @@
 # lunara-k8s
 Lunara - Kubernetes
+
+
+#### start minikube
+minikube start --image-mirror-country=cn --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers
+
+#### official repository
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+
+#### aliyun
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1 
+gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+EOF
+
+#### Set SELinux in permissive mode (effectively disabling it)
+setenforce 0
+sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+
+systemctl enable --now kubelet
+
+
+#### useful links
+https://github.com/kubernetes/kubernetes/issues/56850
