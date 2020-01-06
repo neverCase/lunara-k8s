@@ -17,6 +17,7 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cl
 EOF
 
 #### aliyun
+
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
@@ -26,6 +27,7 @@ gpgcheck=1
 repo_gpgcheck=1 
 gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 EOF
+
 
 #### Set SELinux in permissive mode (effectively disabling it)
 setenforce 0
@@ -38,3 +40,7 @@ systemctl enable --now kubelet
 
 #### useful links
 https://github.com/kubernetes/kubernetes/issues/56850
+
+## TODO
+1. create private hub by harbor
+2. k8s/client-go

@@ -1,3 +1,5 @@
 up.sh
 vendor
 demo*
+harbor-*
+daemon-hook
