@@ -30,24 +30,43 @@ RUN buildDeps=" \
     && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
     && docker-php-ext-install ldap \
     && docker-php-ext-install exif \
-    && pecl install memcached-2.2.0 redis-4.3.0 \
-    && docker-php-ext-enable memcached.so redis.so \
+    && pecl install redis-4.3.0 swoole-1.9.23 \
+    && docker-php-ext-enable redis.so swoole.so \
     && apt-get purge -y --auto-remove $buildDeps \
-    && rm -r /var/lib/apt/lists/*
-#    install lua-5.3.4
+    && rm -r /var/lib/apt/lists/* \
+#    install lua-5.3.4 include liblua.so
+    && cd /data \
     && wget http://www.lua.org/ftp/lua-5.3.4.tar.gz \
     && tar -zvxf lua-5.3.4.tar.gz \
     && cd lua-5.3.4 \
-    && sed -i 's/TO_LIB= liblua.a/TO_LIB= liblua.a liblua.so/g' Makefile
-#    && sed -i 's/TO_LIB\= liblua\.a/TO_LIB\= liblua\.a liblua\.so/g' Makefile \
+    && sed -i 's/TO_LIB= liblua.a/TO_LIB= liblua.a liblua.so/g' Makefile \
     && sed -i 's/$(MYCFLAGS)/$(MYCFLAGS) -fPIC/g' src/Makefile \
+    && sed -i 's/LUA_O=\tlua.o/LUA_O=\tlua.o\n\nLUA_SO=\tliblua.so/g' src/Makefile \
     && sed -i 's/ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)/ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T) $(LUA_SO)/g' src/Makefile \
-    && sed -i 's/LUA_O=  lua.o\\n/LUA_O=  lua.o\\n/g' src/Makefile \
+    && sed -i 's/clean:/$(LUA_SO): $(CORE_O) $(LIB_O)\n\t$(CC) -o $@ -shared $? -ldl -lm\n\nclean:/g' src/Makefile \
     && make linux test \
     && make install \
     && cp src/lua /usr/bin/lua \
     && cp src/luac /usr/bin/luac \
-    && cp src/liblua.so /usr/lib/x86_64-linux-gnu/liblua5.3.so
+    && cp src/liblua.so /usr/lib/x86_64-linux-gnu/liblua5.3.so \
+    && ln -s /usr/local/lib/liblua.a /usr/lib/liblua.a \
+    && mkdir /usr/include/lua \
+    && ln -s /usr/local/include/*lua* /usr/include/lua/ \
+    && cd .. \
+    && rm -rf lua-5.3.4.tar.gz \
+    && rm -rf lua-5.3.4 \
+#    install php lua.so
+    && wget http://pecl.php.net/get/lua-1.0.0.tgz \
+    && tar -zvxf lua-1.0.0.tgz \
+    && cd lua-1.0.0 \
+    && phpize \
+    && ./configure --with-php-config=/usr/local/bin/php-config \
+    && make \
+    && make install \
+    && docker-php-ext-enable lua.so \
+    && cd .. \
+    && rm -rf lua-1.0.0.tgz \
+    && rm -rf lua-1.0.0
 
 WORKDIR /data/
 COPY daemon-hook /data/
