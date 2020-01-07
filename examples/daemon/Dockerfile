@@ -30,6 +30,7 @@ RUN buildDeps=" \
     && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
     && docker-php-ext-install ldap \
     && docker-php-ext-install exif \
+    && docker-php-ext-install pcntl \
     && pecl install redis-4.3.0 swoole-1.9.23 \
     && docker-php-ext-enable redis.so swoole.so \
     && apt-get purge -y --auto-remove $buildDeps \
@@ -66,9 +67,32 @@ RUN buildDeps=" \
     && docker-php-ext-enable lua.so \
     && cd .. \
     && rm -rf lua-1.0.0.tgz \
-    && rm -rf lua-1.0.0
+    && rm -rf lua-1.0.0 \
+#    install libevent-dev
+    && wget https://github.com/libevent/libevent/releases/download/release-2.1.11-stable/libevent-2.1.11-stable.tar.gz \
+    && tar -zvxf libevent-2.1.11-stable.tar.gz \
+    && cd libevent-2.1.11-stable \
+    && ./configure --prefix=/usr/local/libevent-2.1.11/ \
+    && make \
+    && make install \
+    && cd .. \
+    && rm -rf libevent-2.1.11-stable.tar.gz \
+    && rm -rf libevent-2.1.11-stable \
+#    install php libevent.so
+    && wget https://pecl.php.net/get/libevent-0.1.0.tgz \
+    && tar -zxvf libevent-0.1.0.tgz \
+    && cd libevent-0.1.0 \
+    && phpize \
+    && ./configure --with-libevent=/usr/local/libevent-2.1.11/ \
+    && make \
+    && make install \
+    && docker-php-ext-enable libevent.so \
+    && cd .. \
+    && rm -rf libevent-2.1.11.tgz \
+    && rm -rf libevent-2.1.11
 
 WORKDIR /data/
 COPY daemon-hook /data/
 
+CMD ["php", "xxx/start.php", "start", "-d"]
 CMD ["/data/daemon-hook"]
