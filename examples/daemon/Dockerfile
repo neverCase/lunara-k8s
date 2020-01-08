@@ -36,7 +36,6 @@ RUN buildDeps=" \
     && apt-get purge -y --auto-remove $buildDeps \
     && rm -r /var/lib/apt/lists/* \
 #    install lua-5.3.4 include liblua.so
-    && cd /data \
     && wget http://www.lua.org/ftp/lua-5.3.4.tar.gz \
     && tar -zvxf lua-5.3.4.tar.gz \
     && cd lua-5.3.4 \
@@ -94,5 +93,4 @@ RUN buildDeps=" \
 WORKDIR /data/
 COPY daemon-hook /data/
 
-CMD ["php", "xxx/start.php", "start", "-d"]
 CMD ["/data/daemon-hook"]
