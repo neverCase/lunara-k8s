@@ -87,8 +87,8 @@ RUN buildDeps=" \
     && make install \
     && docker-php-ext-enable libevent.so \
     && cd .. \
-    && rm -rf libevent-2.1.11.tgz \
-    && rm -rf libevent-2.1.11
+    && rm -rf libevent-0.1.0.tgz \
+    && rm -rf libevent-0.1.0
 
 WORKDIR /data/
 COPY daemon-hook /data/

@@ -3,6 +3,7 @@ module lunara-k8s
 go 1.12
 
 require (
+	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/kubernetes/client-go v11.0.0+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876 // indirect
