@@ -55,4 +55,9 @@ https://github.com/kubernetes/kubernetes/issues/56850
 3. pull images form harbor in kunbernetes
 4. generate business's configuration files
 5. specific shared volume
+6. configMap
 
+#### points
+1. create redis instances include master-slave
+2. create mysql instances
+3. 

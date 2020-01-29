@@ -1,4 +1,4 @@
-FROM centos:latest
+FROM debian:latest
 
 MAINTAINER 1024769485@qq.com
 
