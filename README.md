@@ -57,7 +57,10 @@ https://github.com/kubernetes/kubernetes/issues/56850
 5. specific shared volume
 6. configMap
 
-#### points
+#### points 
 1. create redis instances include master-slave
 2. create mysql instances
-3. 
+
+#### service
+1. RBAC
+2. create & list & update & delete all deployments & pods & services
