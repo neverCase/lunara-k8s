@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/nevercase/lunara-k8s/configs"
+	"github.com/nevercase/lunara-k8s/internal/service"
 	"log"
-	"lunara-k8s/configs"
-	"lunara-k8s/internal/service"
 	"os"
 	"os/signal"
 	"runtime"

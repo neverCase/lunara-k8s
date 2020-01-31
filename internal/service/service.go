@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"lunara-k8s/configs"
+	"github.com/nevercase/lunara-k8s/configs"
 )
 
 type Service struct {
 	c      *configs.Config
 	ctx    context.Context
-	cancel context.CancelFunc
+		cancel context.CancelFunc
 }
 
 func NewService(c *configs.Config) *Service {
