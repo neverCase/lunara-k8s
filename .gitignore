@@ -5,5 +5,5 @@ harbor-*
 daemon-hook
 test-*
 .DS_Store
-examples/*/makefile.sh
-examples/*/demo*
+*/*/makefile.sh
+*/*/demo*

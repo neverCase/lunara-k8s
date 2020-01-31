@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 )
 
 type HttpConfig struct {
@@ -32,7 +33,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configPath, "configPath", "gpt.yml", "configuration file path")
+	flag.StringVar(&configPath, "configPath", "lunara-k8s.yaml", "configuration file path")
 }
 
 func Init() (err error) {
@@ -50,5 +51,6 @@ func Init() (err error) {
 }
 
 func GetConfig() *Config {
+	log.Println(conf)
 	return conf
 }
