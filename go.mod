@@ -13,4 +13,5 @@ require (
 	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883 // indirect
+	github.com/nevercase/lunara-k8s v0.0.0-20200130031902-6e91671a512d
 )
