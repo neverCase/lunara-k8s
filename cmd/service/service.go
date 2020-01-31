@@ -21,6 +21,7 @@ func main() {
 	}
 	signalHandler(service.NewService(configs.GetConfig()))
 }
+
 func signalHandler(s *service.Service) {
 	var (
 		ch = make(chan os.Signal, 1)

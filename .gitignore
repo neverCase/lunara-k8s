@@ -1,5 +1,6 @@
 up.sh
 vendor
+log
 demo*
 harbor-*
 daemon-hook
