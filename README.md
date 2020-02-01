@@ -61,6 +61,8 @@ https://github.com/kubernetes/kubernetes/issues/56850
 1. create redis instances include master-slave
 2. create mysql instances
 
-#### service
-1. RBAC
-2. create & list & update & delete all deployments & pods & services
+#### website
+1. create a backend http service by go-gin
+2. generate service api doc
+3. create a frontend website by vue.js
+4. create & list & update & delete all deployments & pods & services

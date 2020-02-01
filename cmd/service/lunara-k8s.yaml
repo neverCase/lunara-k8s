@@ -1,4 +1,4 @@
-# This is the configuration file for the go-gpt.
+# This is the configuration file for the lunara-k8s service.
 
 
 HttpService:

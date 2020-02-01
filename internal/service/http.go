@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -13,31 +15,60 @@ type httpService struct {
 	server *http.Server
 }
 
+const (
+	authInActive = iota
+	authActive
+)
+
+type auth struct {
+	status    int
+	loginTime time.Time
+}
+
 func (s *Service) InitHttpServer() *httpService {
 	router := gin.New()
 	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: s.output}), gin.RecoveryWithWriter(s.output))
-
-	// Group using gin.BasicAuth() middleware
-	// gin.Accounts is a shortcut for map[string]string
-	authorized := router.Group("/admin", gin.BasicAuth(gin.Accounts{
-		"foo":    "bar",
-		"austin": "1234",
-		"lena":   "hello2",
-		"manu":   "4321",
-	}))
-
-	// /admin/secrets endpoint
-	// hit "localhost:8080/admin/secrets
-	authorized.GET("/secrets", func(c *gin.Context) {
-		// get user, it was set by the BasicAuth middleware
-		user := c.MustGet(gin.AuthUserKey).(string)
-		if secret, ok := secrets[user]; ok {
-			c.JSON(http.StatusOK, gin.H{"user": user, "secret": secret})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"user": user, "secret": "NO SECRET :("})
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("sessionStore", store))
+	router.GET("/login", func(c *gin.Context) {
+		session := sessions.Default(c)
+		if v := session.Get("auth"); v != nil {
+			auth := v.(auth)
+			if auth.status == authActive {
+				c.JSON(http.StatusOK, s.getResponse(errSignedIn, msgSuccess))
+				return
+			}
 		}
+		// verify authentication
+		login := &loginRequest{
+			Account:  c.Query("account"),
+			Password: c.Query("password"),
+		}
+		if check := s.checkAuth(login); check == false {
+			c.JSON(http.StatusOK, s.getResponse(errLoginFailed, msgLoginFailed))
+			return
+		}
+		auth := auth{
+			status:    authInActive,
+			loginTime: time.Now(),
+		}
+		session.Set("auth", auth)
+		session.Save()
+		c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
 	})
-
+	router.GET("/incr", func(c *gin.Context) {
+		session := sessions.Default(c)
+		if v := session.Get("auth"); v != nil {
+			auth := v.(auth)
+			if auth.status == authActive {
+				// todo
+				c.JSON(200, s.getResponse(errNone, msgSuccess))
+				return
+			}
+		}
+		c.JSON(http.StatusOK, s.getResponse(errNoAuth, msgNoAuth))
+		return
+	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.c.Http.IP, s.c.Http.Port),
 		Handler: router,
@@ -62,11 +93,4 @@ func (h *httpService) ShutDown() {
 	if err := h.server.Shutdown(ctx); err != nil {
 		log.Println("http.Server shutdown err:", err)
 	}
-}
-
-// simulate some private data
-var secrets = gin.H{
-	"foo":    gin.H{"email": "foo@bar.com", "phone": "123433"},
-	"austin": gin.H{"email": "austin@example.com", "phone": "666"},
-	"lena":   gin.H{"email": "lena@guapa.com", "phone": "523443"},
 }
