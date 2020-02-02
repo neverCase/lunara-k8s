@@ -9,9 +9,9 @@ const (
 )
 
 const (
-	msgSuccess     = "success"
-	msgLoginFailed = "failed"
-	msgNoAuth      = "no auth"
+	msgSuccess = "success"
+	msgFailed  = "failed"
+	msgNoAuth  = "no auth"
 )
 
 type loginRequest struct {

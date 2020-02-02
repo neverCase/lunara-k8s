@@ -20,6 +20,12 @@ const (
 	authActive
 )
 
+const (
+	_authKey       = "auth"
+	_routerSignIn  = "/signin"
+	_routerSignOut = "/signout"
+)
+
 type auth struct {
 	status    int
 	loginTime time.Time
@@ -27,47 +33,19 @@ type auth struct {
 
 func (s *Service) InitHttpServer() *httpService {
 	router := gin.New()
-	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: s.output}), gin.RecoveryWithWriter(s.output))
+	if s.output != nil {
+		router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: s.output}), gin.RecoveryWithWriter(s.output))
+	}
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("sessionStore", store))
-	router.GET("/login", func(c *gin.Context) {
-		session := sessions.Default(c)
-		if v := session.Get("auth"); v != nil {
-			auth := v.(auth)
-			if auth.status == authActive {
-				c.JSON(http.StatusOK, s.getResponse(errSignedIn, msgSuccess))
-				return
-			}
-		}
-		// verify authentication
-		login := &loginRequest{
-			Account:  c.Query("account"),
-			Password: c.Query("password"),
-		}
-		if check := s.checkAuth(login); check == false {
-			c.JSON(http.StatusOK, s.getResponse(errLoginFailed, msgLoginFailed))
-			return
-		}
-		auth := auth{
-			status:    authInActive,
-			loginTime: time.Now(),
-		}
-		session.Set("auth", auth)
-		session.Save()
-		c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
+	router.POST(_routerSignIn, func(c *gin.Context) {
+		s.handleSignIn(c)
+	})
+	router.GET(_routerSignOut, func(c *gin.Context) {
+		s.handleSignOut(c)
 	})
 	router.GET("/incr", func(c *gin.Context) {
-		session := sessions.Default(c)
-		if v := session.Get("auth"); v != nil {
-			auth := v.(auth)
-			if auth.status == authActive {
-				// todo
-				c.JSON(200, s.getResponse(errNone, msgSuccess))
-				return
-			}
-		}
-		c.JSON(http.StatusOK, s.getResponse(errNoAuth, msgNoAuth))
-		return
+		c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
 	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.c.Http.IP, s.c.Http.Port),
@@ -76,7 +54,7 @@ func (s *Service) InitHttpServer() *httpService {
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
 			if err == http.ErrServerClosed {
-				log.Println("The server closed under request")
+				log.Println("The server closed under request err:", err)
 			} else {
 				log.Fatal("The server closed unexpected err:", err)
 			}
@@ -93,4 +71,56 @@ func (h *httpService) ShutDown() {
 	if err := h.server.Shutdown(ctx); err != nil {
 		log.Println("http.Server shutdown err:", err)
 	}
+}
+
+func (s *Service) handleSignIn(c *gin.Context) {
+	session := sessions.Default(c)
+	if v := session.Get(_authKey); v != nil {
+		auth := v.(auth)
+		if auth.status == authActive {
+			c.JSON(http.StatusOK, s.getResponse(errSignedIn, msgSuccess))
+			return
+		}
+	}
+	// verify authentication
+	login := &loginRequest{
+		Account:  c.PostForm("account"),
+		Password: c.PostForm("password"),
+	}
+	fmt.Println("login:", login)
+	if check := s.checkAuth(login); check == false {
+		c.JSON(http.StatusOK, s.getResponse(errLoginFailed, msgFailed))
+		return
+	}
+	authData := auth{
+		status:    authInActive,
+		loginTime: time.Now(),
+	}
+	session.Set(_authKey, authData)
+	session.Save()
+	c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
+	session = sessions.Default(c)
+	if v := session.Get(_authKey); v != nil {
+		auth := v.(auth)
+		log.Println("auth:", auth)
+	} else {
+		log.Println("no session")
+	}
+}
+
+func (s *Service) handleSignOut(c *gin.Context) {
+	session := sessions.Default(c)
+	if v := session.Get(_authKey); v != nil {
+		auth := v.(auth)
+		log.Println("handleSignOut auth:", auth)
+		if auth.status == authActive {
+			session.Clear()
+			session.Save()
+			c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
+			return
+		}
+	} else {
+		log.Println("no session")
+	}
+	c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
 }
