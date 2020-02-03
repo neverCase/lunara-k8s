@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/signal"
 	"reflect"
-	"syscall"
+	"strings"
 	"testing"
 	"time"
 )
@@ -57,6 +56,7 @@ var fakeConf = &configs.Config{
 var domain = fmt.Sprintf("http://127.0.0.1:%d", fakeConf.Http.Port)
 var sigInUrl = fmt.Sprintf("%s%s", domain, _routerSignIn)
 var sigOutUrl = fmt.Sprintf("%s%s", domain, _routerSignOut)
+var cookieTmp []*http.Cookie
 
 func TestService_InitHttpServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -91,14 +91,12 @@ func TestService_InitHttpServer(t *testing.T) {
 				cancel:      tt.fields.cancel,
 			}
 			server := s.InitHttpServer()
-			var client = &http.Client{
-				Timeout: 30 * time.Second,
-			}
+			time.Sleep(time.Second * 1)
 			// test sign in failed
 			params := url.Values{}
 			params.Add("account", "admin")
 			params.Add("password", "12345611")
-			if got, err := httpPost(client, sigInUrl, params); err != nil ||
+			if got, err := httpPost(sigInUrl, params); err != nil ||
 				!reflect.DeepEqual(got, fakeResponse.LoginFailed) {
 				t.Errorf("http request %s = %v, want %v, err (%v)", _routerSignIn, got, fakeResponse.LoginFailed, err)
 			}
@@ -106,28 +104,56 @@ func TestService_InitHttpServer(t *testing.T) {
 			params = url.Values{}
 			params.Add("account", "admin")
 			params.Add("password", "123456")
-			if got, err := httpPost(client, sigInUrl, params); err != nil ||
+			if got, err := httpPost(sigInUrl, params); err != nil ||
 				!reflect.DeepEqual(got, fakeResponse.Success) {
 				t.Errorf("http request %s = %v, want %v, err (%v)", _routerSignIn, got, fakeResponse.Success, err)
 			}
+			// test signed in
+			params = url.Values{}
+			params.Add("account", "admin")
+			params.Add("password", "123456")
+			if got, err := httpPost(sigInUrl, params); err != nil ||
+				!reflect.DeepEqual(got, fakeResponse.SignedIn) {
+				t.Errorf("http request %s = %v, want %v, err (%v)", _routerSignIn, got, fakeResponse.SignedIn, err)
+			}
 			// test sign out success
-			if got, err := httpGet(client, sigOutUrl); err != nil ||
+			if got, err := httpGet(sigOutUrl); err != nil ||
 				!reflect.DeepEqual(got, fakeResponse.Success) {
 				t.Errorf("http request %s = %v, want %v, err (%v)", _routerSignOut, got, fakeResponse.Success, err)
 			}
-			server.ShutDown()
+			cookieTmp = []*http.Cookie{}
+			//test sign out failed
+			if got, err := httpGet(sigOutUrl); err != nil ||
+				!reflect.DeepEqual(got, fakeResponse.UnknownFailed) {
+				t.Errorf("http request %s = %v, want %v, err (%v)", _routerSignOut, got, fakeResponse.UnknownFailed, err)
+			}
+			//server.ShutDown()
+			_ = server
 		})
 	}
 }
 
-func httpGet(client *http.Client, targetUrl string) (ret httpResponse, err error) {
+func httpGet(targetUrl string) (ret httpResponse, err error) {
 	var (
+		req     *http.Request
 		res     *http.Response
 		content []byte
 	)
-	if res, err = client.Get(targetUrl); err != nil {
+	client := &http.Client{
+		Timeout: time.Second * 30,
+	}
+	req, _ = http.NewRequest("GET", targetUrl, strings.NewReader(""))
+	if len(cookieTmp) > 0 {
+		for _, v := range cookieTmp {
+			req.AddCookie(v)
+		}
+	}
+	fmt.Printf("req targetUrl:%s cookies:%v\n", targetUrl, req.Cookies())
+	req.Header.Set("Content-Type", "application/json")
+	if res, err = client.Do(req); err != nil {
 		return ret, err
 	}
+	fmt.Printf("res targetUrl:%s cookies:%v\n", targetUrl, res.Cookies())
 	if content, err = ioutil.ReadAll(res.Body); err != nil {
 		return ret, err
 	}
@@ -140,16 +166,32 @@ func httpGet(client *http.Client, targetUrl string) (ret httpResponse, err error
 	return ret, nil
 }
 
-func httpPost(client *http.Client, targetUrl string, params url.Values) (ret httpResponse, err error) {
+func httpPost(targetUrl string, params url.Values) (ret httpResponse, err error) {
 	var (
+		req     *http.Request
 		res     *http.Response
 		content []byte
 	)
-	if res, err = client.PostForm(targetUrl, params); err != nil {
+	client := &http.Client{
+		Timeout: time.Second * 30,
+	}
+	req, _ = http.NewRequest("POST", targetUrl, strings.NewReader(params.Encode()))
+	if len(cookieTmp) > 0 {
+		for _, v := range cookieTmp {
+			req.AddCookie(v)
+		}
+	}
+	fmt.Printf("req targetUrl:%s cookies:%v\n", targetUrl, req.Cookies())
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+	if res, err = client.Do(req); err != nil {
 		return ret, err
 	}
+	fmt.Printf("res targetUrl:%s cookies:%v\n", targetUrl, res.Cookies())
 	if content, err = ioutil.ReadAll(res.Body); err != nil {
 		return ret, err
+	}
+	if len(res.Cookies()) > 0 {
+		cookieTmp = res.Cookies()
 	}
 	fmt.Println("content:", string(content))
 	if err = res.Body.Close(); err != nil {
@@ -182,22 +224,3 @@ func httpPost(client *http.Client, targetUrl string, params url.Values) (ret htt
 //		})
 //	}
 //}
-
-func signalHandler() {
-	var (
-		ch = make(chan os.Signal, 1)
-	)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
-	for {
-		sig := <-ch
-		fmt.Printf("get a signal %s, stop the lunara-k8s service\n", sig.String())
-		switch sig {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			time.Sleep(time.Second)
-			return
-		case syscall.SIGHUP:
-		default:
-			return
-		}
-	}
-}

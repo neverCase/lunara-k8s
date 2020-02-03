@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -26,9 +27,14 @@ const (
 	_routerSignOut = "/signout"
 )
 
+const (
+	_cookieTimeout = iota
+	_maxAge        = 3600
+)
+
 type auth struct {
-	status    int
-	loginTime time.Time
+	Status    int `json:"status"`
+	LoginTime int `json:"login_time"`
 }
 
 func (s *Service) InitHttpServer() *httpService {
@@ -45,7 +51,31 @@ func (s *Service) InitHttpServer() *httpService {
 		s.handleSignOut(c)
 	})
 	router.GET("/incr", func(c *gin.Context) {
-		c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
+		//session := sessions.Default(c)
+		//if v := session.Get("auth"); v != nil {
+		//	auth := v.(auth)
+		//	log.Println("session auth:", session)
+		//	if auth.status == authActive {
+		//		// todo
+		//		c.JSON(200, s.getResponse(errNone, msgSuccess))
+		//		return
+		//	}
+		//} else {
+		//	log.Println("no session")
+		//}
+		//c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
+		session := sessions.Default(c)
+		var count int
+		v := session.Get("count")
+		if v == nil {
+			count = 0
+		} else {
+			count = v.(int)
+			count++
+		}
+		session.Set("count", count)
+		session.Save()
+		c.JSON(200, gin.H{"count": count})
 	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.c.Http.IP, s.c.Http.Port),
@@ -76,9 +106,18 @@ func (h *httpService) ShutDown() {
 func (s *Service) handleSignIn(c *gin.Context) {
 	session := sessions.Default(c)
 	if v := session.Get(_authKey); v != nil {
-		auth := v.(auth)
-		if auth.status == authActive {
+		var authCache auth
+		if err := json.Unmarshal(v.([]byte), &authCache); err != nil {
+			log.Printf("handleSignIn Unmarshal data:%v err:%v\n", v.(string), err)
+			c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
+			return
+		}
+		if authCache.Status == authActive {
 			c.JSON(http.StatusOK, s.getResponse(errSignedIn, msgSuccess))
+			return
+		} else {
+			log.Println("signed out or auth timeout")
+			c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
 			return
 		}
 	}
@@ -87,40 +126,62 @@ func (s *Service) handleSignIn(c *gin.Context) {
 		Account:  c.PostForm("account"),
 		Password: c.PostForm("password"),
 	}
-	fmt.Println("login:", login)
 	if check := s.checkAuth(login); check == false {
 		c.JSON(http.StatusOK, s.getResponse(errLoginFailed, msgFailed))
 		return
 	}
 	authData := auth{
-		status:    authInActive,
-		loginTime: time.Now(),
+		Status:    authActive,
+		LoginTime: int(time.Now().Unix()),
 	}
-	session.Set(_authKey, authData)
+	var (
+		str []byte
+		err error
+	)
+	if str, err = json.Marshal(authData); err != nil {
+		log.Printf("handleSignIn Marshal data:%v err:%v\n", string(str), err)
+		c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
+		return
+	}
+	session.Set(_authKey, str)
+	session.Options(sessions.Options{MaxAge: _maxAge})
 	session.Save()
 	c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
-	session = sessions.Default(c)
-	if v := session.Get(_authKey); v != nil {
-		auth := v.(auth)
-		log.Println("auth:", auth)
-	} else {
-		log.Println("no session")
-	}
 }
 
 func (s *Service) handleSignOut(c *gin.Context) {
+	t, err := c.Cookie("sessionStore")
+	if err != nil {
+		log.Println("get cookie err:", err)
+	} else {
+		log.Println("handleSignOut cookie:", t)
+	}
 	session := sessions.Default(c)
 	if v := session.Get(_authKey); v != nil {
-		auth := v.(auth)
-		log.Println("handleSignOut auth:", auth)
-		if auth.status == authActive {
-			session.Clear()
-			session.Save()
-			c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
+		var (
+			authCache auth
+			str []byte
+			err error
+		)
+		if err := json.Unmarshal(v.([]byte), &authCache); err != nil {
+			log.Printf("handleSignOut Unmarshal data:%v err:%v\n", v.(string), err)
+			c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
 			return
 		}
+		log.Printf("handleSignOut -------- cookie data:%v \n", v)
+		authCache.Status = authInActive
+		if str, err = json.Marshal(authCache); err != nil {
+			log.Printf("handleSignIn Marshal data:%v err:%v\n", string(str), err)
+			c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
+			return
+		}
+		session.Delete(_authKey)
+		session.Options(sessions.Options{MaxAge: _cookieTimeout})
+		session.Save()
+		c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
+		return
 	} else {
 		log.Println("no session")
+		c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
 	}
-	c.JSON(http.StatusOK, s.getResponse(errUnknown, msgFailed))
 }
