@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
 )
 
 type httpService struct {
@@ -51,19 +52,6 @@ func (s *Service) InitHttpServer() *httpService {
 		s.handleSignOut(c)
 	})
 	router.GET("/incr", func(c *gin.Context) {
-		//session := sessions.Default(c)
-		//if v := session.Get("auth"); v != nil {
-		//	auth := v.(auth)
-		//	log.Println("session auth:", session)
-		//	if auth.status == authActive {
-		//		// todo
-		//		c.JSON(200, s.getResponse(errNone, msgSuccess))
-		//		return
-		//	}
-		//} else {
-		//	log.Println("no session")
-		//}
-		//c.JSON(http.StatusOK, s.getResponse(errNone, msgSuccess))
 		session := sessions.Default(c)
 		var count int
 		v := session.Get("count")
@@ -160,8 +148,8 @@ func (s *Service) handleSignOut(c *gin.Context) {
 	if v := session.Get(_authKey); v != nil {
 		var (
 			authCache auth
-			str []byte
-			err error
+			str       []byte
+			err       error
 		)
 		if err := json.Unmarshal(v.([]byte), &authCache); err != nil {
 			log.Printf("handleSignOut Unmarshal data:%v err:%v\n", v.(string), err)
