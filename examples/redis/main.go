@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"log"
 	"os"
@@ -10,6 +12,20 @@ import (
 )
 
 func main() {
+	go func() {
+		for {
+			if err := testConn(); err != nil {
+				log.Println(err)
+				time.Sleep(time.Second * 1)
+			} else {
+				break
+			}
+		}
+	}()
+	signalHandler()
+}
+
+func testConn() (err error) {
 	redisInstance := newPool("redis-master:6379", "").Get()
 	defer func() {
 		if err := redisInstance.Close(); err != nil {
@@ -17,14 +33,14 @@ func main() {
 		}
 	}()
 	if _, err := redisInstance.Do("set", "abc", 123); err != nil {
-		log.Println("set err", err)
+		return errors.New(fmt.Sprintf("set err:%v", err))
 	}
 	if res, err := redis.String(redisInstance.Do("get", "abc")); err != nil {
-		log.Println("get err", err)
+		return errors.New(fmt.Sprintf("get err:%v", err))
 	} else {
 		log.Println("res:", res)
 	}
-	signalHandler()
+	return nil
 }
 
 func newPool(addr string, pwd string) *redis.Pool {
