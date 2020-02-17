@@ -14,17 +14,15 @@ type HttpConfig struct {
 	Port int    `yaml:"port"`
 }
 
-type ProjectsConfig struct {
-	Projects [][]string `yaml:"Projects,flow"`
+type Kubernetes struct {
+	Conf string `yaml:"conf"`
 }
 
 type Config struct {
-	Http           HttpConfig `yaml:"HttpService"`
-	LogFile        string     `yaml:"LogFile"`
-	ScriptsPath    string     `yaml:"ScriptsPath"`
-	TemplatesPath  string     `yaml:"TemplatesPath"`
-	ProjectsConfig `yaml:",inline"`
-	ConfigPath     string
+	Http       HttpConfig `yaml:"HttpService"`
+	LogFile    string     `yaml:"LogFile"`
+	Kubernetes Kubernetes `json:"Kubernetes"`
+	ConfigPath string
 }
 
 var (

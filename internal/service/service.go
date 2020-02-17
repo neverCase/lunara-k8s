@@ -6,14 +6,16 @@ import (
 	"os"
 
 	"github.com/nevercase/lunara-k8s/configs"
+	"github.com/nevercase/lunara-k8s/internal/kubernetes"
 )
 
 type Service struct {
-	c           *configs.Config
-	output      *os.File
-	httpService *httpService
-	ctx         context.Context
-	cancel      context.CancelFunc
+	c             *configs.Config
+	output        *os.File
+	httpService   *httpService
+	k8sController *kubernetes.K8SController
+	ctx           context.Context
+	cancel        context.CancelFunc
 }
 
 func NewService(c *configs.Config) *Service {
@@ -24,10 +26,11 @@ func NewService(c *configs.Config) *Service {
 	log.SetOutput(file)
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
-		c:      c,
-		output: file,
-		ctx:    ctx,
-		cancel: cancel,
+		c:             c,
+		output:        file,
+		k8sController: kubernetes.NewK8SController(c),
+		ctx:           ctx,
+		cancel:        cancel,
 	}
 	s.httpService = s.InitHttpServer()
 	return s

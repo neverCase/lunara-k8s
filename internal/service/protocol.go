@@ -22,6 +22,7 @@ type loginRequest struct {
 type httpResponse struct {
 	ErrorCode int    `json:"error_code"`
 	Message   string `json:"message"`
+	Data      string `json:"data"`
 }
 
 func (s *Service) getResponse(errCode int, msg string) httpResponse {

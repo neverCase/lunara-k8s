@@ -1,14 +1,11 @@
 # This is the configuration file for the lunara-k8s service.
 
+LogFile: "/Users/SAM/go/src/github.com/nevercase/lunara-k8s/log/out.log"
 
 HttpService:
   ip: "0.0.0.0"
   port: 7080
 
-ScriptsPath: ""
-TemplatesPath: ""
+Kubernetes:
+  conf: "/root/.kube/config"
 
-LogFile: "/Users/SAM/go/src/github.com/nevercase/lunara-k8s/log/out.log"
-
-Projects:
-- ["hero", "hero", "/svn"]

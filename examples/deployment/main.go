@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	appsv1 "k8s.io/api/apps/v1"
@@ -61,7 +62,7 @@ func main() {
 					Containers: []apiv1.Container{
 						{
 							Name:  "tr-container",
-							Image: "39.99.229.222:37229/helix-saga/test-redis:1.0",
+							Image: "39.99.229.222:37229/helix-saga/test-redis:2.0",
 							Ports: []apiv1.ContainerPort{
 								{
 									//Name:          "http",
@@ -82,7 +83,7 @@ func main() {
 							Name: "private-harbor",
 						},
 					},
-					RestartPolicy: apiv1.RestartPolicyNever,
+					RestartPolicy: apiv1.RestartPolicyAlways,
 				},
 			},
 		},
@@ -104,6 +105,32 @@ func main() {
 	for _, d := range list.Items {
 		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
 	}
+	type Res struct {
+		ErrorCode int    `json:"error_code"`
+		Message   string `json:"message"`
+		Data      string `json:"data"`
+	}
+	type DataList struct {
+		Deployments appsv1.DeploymentList `json:"deployments"`
+	}
+	res := &Res{
+		ErrorCode: 10000,
+		Message:   "success",
+		Data:      "",
+	}
+	data := &DataList{
+		Deployments: *list,
+	}
+	content, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	res.Data = string(content)
+	response, err := json.Marshal(res)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("response:", string(response))
 
 	//dynamicDemo(kubeConfig)
 }
