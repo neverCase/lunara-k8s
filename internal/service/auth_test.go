@@ -27,7 +27,9 @@ func TestService_checkAuth(t *testing.T) {
 	}{
 		{
 			name: "test_1",
-			fields: fields{},
+			fields: fields{
+				httpService: &httpService{},
+			},
 			args: args{
 				login: &loginRequest{
 					Account: "abc",
@@ -59,7 +61,7 @@ func TestService_checkAuth(t *testing.T) {
 				ctx:         tt.fields.ctx,
 				cancel:      tt.fields.cancel,
 			}
-			if got := s.checkAuth(tt.args.login); got != tt.want {
+			if got := s.httpService.checkAuth(tt.args.login); got != tt.want {
 				t.Errorf("Service.checkAuth() = %v, want %v", got, tt.want)
 			}
 		})
