@@ -1,46 +1,43 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
 	"fmt"
+
+	"github.com/json-iterator/go"
+	k8sCrd "github.com/nevercase/lunara-k8s/internal/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
-	"log"
-	"os"
-	"path/filepath"
 )
 
 func main() {
-	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-	log.Println("host:", host, " port:", port)
+	//host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	//log.Println("host:", host, " port:", port)
+	//
+	//var kubeConfig *string
+	//if home := homedir.HomeDir(); home != "" {
+	//	kubeConfig = flag.String("kubeConfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeConfig file")
+	//} else {
+	//	kubeConfig = flag.String("kubeConfig", "", "absolute path to the kubeConfig file")
+	//}
+	//flag.Parse()
+	//log.Println("kubeConfig:", *kubeConfig)
+	//config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//log.Println("config:", config)
+	//clientSet, err := kubernetes.NewForConfig(config)
+	//if err != nil {
+	//	panic(err)
+	//}
+	k := k8sCrd.NewK8SController(k8sCrd.Config{})
 
-	var kubeConfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeConfig = flag.String("kubeConfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeConfig file")
-	} else {
-		kubeConfig = flag.String("kubeConfig", "", "absolute path to the kubeConfig file")
-	}
-	flag.Parse()
-	log.Println("kubeConfig:", *kubeConfig)
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
-	if err != nil {
-		panic(err)
-	}
-	log.Println("config:", config)
-	clientSet, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-
-	deploymentsClient := clientSet.AppsV1().Deployments(apiv1.NamespaceDefault)
+	deploymentsClient := k.ClientSet.AppsV1().Deployments(apiv1.NamespaceDefault)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-redis",
@@ -105,20 +102,21 @@ func main() {
 	for _, d := range list.Items {
 		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
 	}
+
+	type DataList struct {
+		Deployments appsv1.DeploymentList `json:"deployments"`
+	}
 	type Res struct {
 		ErrorCode int    `json:"error_code"`
 		Message   string `json:"message"`
 		Data      string `json:"data"`
 	}
-	type DataList struct {
-		Deployments appsv1.DeploymentList `json:"deployments"`
-	}
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	res := &Res{
 		ErrorCode: 10000,
 		Message:   "success",
-		Data:      "",
 	}
-	data := &DataList{
+	data := DataList{
 		Deployments: *list,
 	}
 	content, err := json.Marshal(data)
@@ -130,7 +128,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("response:", string(response))
+	fmt.Println("response-1:", string(response))
 
 	//dynamicDemo(kubeConfig)
 }

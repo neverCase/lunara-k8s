@@ -7,6 +7,8 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+
+	k8s "github.com/nevercase/lunara-k8s/internal/kubernetes"
 )
 
 type HttpConfig struct {
@@ -14,14 +16,10 @@ type HttpConfig struct {
 	Port int    `yaml:"port"`
 }
 
-type Kubernetes struct {
-	Conf string `yaml:"conf"`
-}
-
 type Config struct {
 	Http       HttpConfig `yaml:"HttpService"`
 	LogFile    string     `yaml:"LogFile"`
-	Kubernetes Kubernetes `json:"Kubernetes"`
+	Kubernetes k8s.Config `yaml:"Kubernetes"`
 	ConfigPath string
 }
 

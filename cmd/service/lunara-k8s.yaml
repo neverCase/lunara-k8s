@@ -8,4 +8,5 @@ HttpService:
 
 Kubernetes:
   conf: "/root/.kube/config"
+  master_url: ""
 

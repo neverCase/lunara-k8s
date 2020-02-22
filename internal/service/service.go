@@ -28,7 +28,7 @@ func NewService(c *configs.Config) *Service {
 	s := &Service{
 		c:             c,
 		output:        file,
-		k8sController: kubernetes.NewK8SController(c),
+		k8sController: kubernetes.NewK8SController(c.Kubernetes),
 		ctx:           ctx,
 		cancel:        cancel,
 	}

@@ -1,11 +1,9 @@
 package kubernetes
 
 import (
-	"flag"
 	"log"
 	"path/filepath"
 
-	"github.com/nevercase/lunara-k8s/configs"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,28 +12,30 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-type K8SController struct {
-	kubeConfig *string
-	clientSet  *kubernetes.Clientset
+type Config struct {
+	Conf      string `json:"conf" yaml:"conf"`
+	MasterUrl string `json:"master_url" yaml:"master_url"`
 }
 
-func NewK8SController(c *configs.Config) *K8SController {
+type K8SController struct {
+	kubeConfig Config
+	ClientSet  *kubernetes.Clientset
+}
+
+func NewK8SController(c Config) *K8SController {
 	k := &K8SController{
-		kubeConfig: &c.Kubernetes.Conf,
+		kubeConfig: c,
 	}
-	if k.kubeConfig == nil {
-		if home := homedir.HomeDir(); home != "" {
-			k.kubeConfig = flag.String("kubeConfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeConfig file")
-		} else {
-			k.kubeConfig = flag.String("kubeConfig", "", "absolute path to the kubeConfig file")
-		}
+	if k.kubeConfig.Conf == "" && k.kubeConfig.MasterUrl == "" {
+		k.kubeConfig.Conf = filepath.Join(homedir.HomeDir(), ".kube", "config")
+		k.kubeConfig.MasterUrl = ""
 	}
-	config, err := clientcmd.BuildConfigFromFlags("", *k.kubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags(k.kubeConfig.MasterUrl, k.kubeConfig.Conf)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("config:", config)
-	k.clientSet, err = kubernetes.NewForConfig(config)
+	k.ClientSet, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func NewK8SController(c *configs.Config) *K8SController {
 }
 
 func (k *K8SController) DeploymentList() (res *appsv1.DeploymentList) {
-	deploymentsClient := k.clientSet.AppsV1().Deployments(apiv1.NamespaceDefault)
+	deploymentsClient := k.ClientSet.AppsV1().Deployments(apiv1.NamespaceDefault)
 	list, err := deploymentsClient.List(metav1.ListOptions{})
 	if err != nil {
 		log.Println(err)
