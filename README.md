@@ -49,7 +49,7 @@ kubectl create secret docker-registry my-secret --docker-server=123.456.789.0:95
 #### useful links
 https://github.com/kubernetes/kubernetes/issues/56850
 
-## TODO
+#### features
 1. create private hub by harbor
 2. k8s/client-go #
 3. pull images form harbor in kunbernetes
@@ -58,7 +58,7 @@ https://github.com/kubernetes/kubernetes/issues/56850
 6. configMap
 
 #### points 
-1. create redis instances include master-slave
+1. create redis instances include master-slave model by custom controller
 2. create mysql instances
 
 #### website
@@ -66,3 +66,9 @@ https://github.com/kubernetes/kubernetes/issues/56850
 2. generate service api doc
 3. create a frontend website by vue.js
 4. create & list & update & delete all deployments & pods & services
+
+#### todo
+1. configMap
+2. statefulSet
+3. custom controller
+3. pvc pv storageClass
