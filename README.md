@@ -49,7 +49,7 @@ kubectl create secret docker-registry my-secret --docker-server=123.456.789.0:95
 #### useful links
 https://github.com/kubernetes/kubernetes/issues/56850
 
-## TODO
+## features
 1. create private hub by harbor
 2. k8s/client-go #
 3. pull images form harbor in kunbernetes
