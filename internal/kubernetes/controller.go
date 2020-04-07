@@ -19,12 +19,13 @@ type Config struct {
 
 type K8SController struct {
 	kubeConfig Config
+
 	ClientSet  *kubernetes.Clientset
 }
 
-func NewK8SController(c Config) *K8SController {
+func NewK8SController(cfg Config) *K8SController {
 	k := &K8SController{
-		kubeConfig: c,
+		kubeConfig: cfg,
 	}
 	if k.kubeConfig.Conf == "" && k.kubeConfig.MasterUrl == "" {
 		k.kubeConfig.Conf = filepath.Join(homedir.HomeDir(), ".kube", "config")
